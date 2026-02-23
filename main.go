@@ -16,12 +16,20 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 
-	todos := []Todo{
+	switch r.Method {
+    case http.MethodGet:
+        todos := []Todo{
 		{ID: 1, Title: "Buy groceries", Checked: false},
 		{ID: 2, Title: "Walk the dog", Checked: true},
 	}
-
 	json.NewEncoder(w).Encode(todos)
+
+    case http.MethodPost:
+		json.NewEncoder(w).Encode("POSTリクエストを受け取りました")
+    default:
+        w.WriteHeader(http.StatusMethodNotAllowed)
+    }
+
 }
 
 func main() {
