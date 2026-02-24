@@ -12,20 +12,30 @@ type Todo struct {
 	Checked bool `json:"checked"`
 }
 
+
+var todos = []Todo{
+		{ID: 1, Title: "Buy groceries", Checked: false},
+		{ID: 2, Title: "Walk the dog", Checked: true},
+	}
+
 func getTodos(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
-    case http.MethodGet:
-        todos := []Todo{
-		{ID: 1, Title: "Buy groceries", Checked: false},
-		{ID: 2, Title: "Walk the dog", Checked: true},
-	}
+	case http.MethodGet:
 	json.NewEncoder(w).Encode(todos)
 
     case http.MethodPost:
-		json.NewEncoder(w).Encode("POSTリクエストを受け取りました")
+		var newTodo Todo
+		if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
+            w.WriteHeader(http.StatusBadRequest)
+            return
+        }
+        todos = append(todos, newTodo)
+        w.WriteHeader(http.StatusCreated)
+        json.NewEncoder(w).Encode(newTodo)
+
     default:
         w.WriteHeader(http.StatusMethodNotAllowed)
     }
