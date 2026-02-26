@@ -60,6 +60,8 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
 
 	//有効IDに対する処理
 	switch r.Method {
+
+	// GET /todos/{id} のTodoを返す
     case http.MethodGet:
         for _, t := range todos {
             if t.ID == id {
@@ -69,6 +71,20 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
         }
         w.WriteHeader(http.StatusNotFound)
         w.Write([]byte(`{"error": "Todoが見つかりません"}`))
+
+	// DELETE /todos/{id} のTodoを削除する
+	case http.MethodDelete:
+	for index, t := range todos {
+		if t.ID == id {
+			todos = append(todos[:index], todos[index+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(`{"error": "削除するTodoが見つかりません"}`))
+
     default:
         w.WriteHeader(http.StatusMethodNotAllowed)
     }
