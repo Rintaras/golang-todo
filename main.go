@@ -32,6 +32,7 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
 		case http.MethodGet:
 		json.NewEncoder(w).Encode(todos)
 
+		// POST /todos の新しいTodoを追加する
 		case http.MethodPost:
 			var newTodo Todo
 			if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
@@ -84,6 +85,24 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(`{"error": "削除するTodoが見つかりません"}`))
+
+	// PUT /todos/{id} のTodoを更新する
+	case http.MethodPut:
+	for index, t := range todos {
+		if t.ID == id {
+			var updatedTodo Todo
+			if err := json.NewDecoder(r.Body).Decode(&updatedTodo); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			todos[index] = updatedTodo
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(updatedTodo)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(`{"error": "更新するTodoが見つかりません"}`))
 
     default:
         w.WriteHeader(http.StatusMethodNotAllowed)
