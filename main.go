@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type Todo struct {
@@ -22,20 +24,51 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 
+	//URLからIDのみを抽出する
+	idStr := strings.TrimPrefix(r.URL.Path, "/todos/")
+
+	if idStr == "" {
+		switch r.Method {
+		case http.MethodGet:
+		json.NewEncoder(w).Encode(todos)
+
+		case http.MethodPost:
+			var newTodo Todo
+			if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			todos = append(todos, newTodo)
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(newTodo)
+
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	return
+	}
+
+	id, err := strconv.Atoi(idStr)
+
+	//無効なやつの処理
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        w.Write([]byte(`{"error": "無効なID形式です"}`))
+        return
+    }
+
+
+	//有効IDに対する処理
 	switch r.Method {
-	case http.MethodGet:
-	json.NewEncoder(w).Encode(todos)
-
-    case http.MethodPost:
-		var newTodo Todo
-		if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
-            w.WriteHeader(http.StatusBadRequest)
-            return
+    case http.MethodGet:
+        for _, t := range todos {
+            if t.ID == id {
+                json.NewEncoder(w).Encode(t)
+                return
+            }
         }
-        todos = append(todos, newTodo)
-        w.WriteHeader(http.StatusCreated)
-        json.NewEncoder(w).Encode(newTodo)
-
+        w.WriteHeader(http.StatusNotFound)
+        w.Write([]byte(`{"error": "Todoが見つかりません"}`))
     default:
         w.WriteHeader(http.StatusMethodNotAllowed)
     }
@@ -43,7 +76,7 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/todos", getTodos)
+	http.HandleFunc("/todos/", getTodos)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal("サーバーの起動に失敗 : ", err)
